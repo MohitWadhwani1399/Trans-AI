@@ -1,17 +1,86 @@
-"use client"
+"use client";
 import "regenerator-runtime/runtime";
 import Image from "next/image";
-import TextArea from '@/components/Inputs/TextArea'
-import { IconVolume } from "@tabler/icons-react";
-import SpeechRecognitionComponent from '@/components/SpeechRecognition/SpeechRecognition'
+import TextArea from "@/components/Inputs/TextArea";
+import FileUpload from "@/components/Inputs/FileUpload";
+import LinkPaste from "@/components/Inputs/LinkPaste";
+import CategoryLinks from "@/components/categoryLinks";
+import { rtfToText } from "@/utils/rtfToText";
+import useTranslate from "@/hooks/useTranslate";
+import {
+  IconCopy,
+  IconStar,
+  IconThumbDown,
+  IconThumbUp,
+  IconVolume,
+} from "@tabler/icons-react";
+import SpeechRecognitionComponent from "@/components/SpeechRecognition/SpeechRecognition";
+import LanguageSelector from "@/components/Inputs/LanguageSelector";
 
-import React, { useState,ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 export default function Home() {
-  const [sourceText,setSourceText] = useState<string>("")
-  const handleAudioPlayback = (sourceText:string)=>{
-    const speechUtterance = new SpeechSynthesisUtterance(sourceText)
+  const [sourceText, setSourceText] = useState<string>("");
+  const [copied, setCopied] = useState<boolean>(false);
+  const [favorite, setFavorite] = useState<boolean>(false);
+  const [languages] = useState<string[]>([
+    "English",
+    "Spanish",
+    "French",
+    "German",
+    "Chinese",
+  ]);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("Spanish");
+  const targetText = useTranslate({ sourceText, selectedLanguage });
+  const handleAudioPlayback = (sourceText: string) => {
+    const speechUtterance = new SpeechSynthesisUtterance(sourceText);
     window.speechSynthesis.speak(speechUtterance);
-  }
+  };
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const rtfContent = reader.result as string;
+        const text = rtfToText(rtfContent);
+        setSourceText(text);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(targetText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLike = () => {
+    // Implement like logic
+  };
+
+  const handleDislike = () => {
+    // Implement dislike logic
+  };
+
+  const handleFavorite = () => {
+    setFavorite(!favorite);
+    if (!favorite) {
+      localStorage.setItem("favoriteTranslation", targetText);
+    } else {
+      localStorage.removeItem("favoriteTranslation");
+    }
+  };
+
+  const handleLinkPaste = async (e: ChangeEvent<HTMLInputElement>) => {
+    const link = e.target.value;
+    try {
+      const response = await fetch(link);
+      const data = await response.text();
+      setSourceText(data);
+    } catch (error) {
+      console.error("Error fetching link content:", error);
+    }
+  };
 
   return (
     <div className="w-full bg-black bg-dot-white/[0.2] bg-dot-black/[0.2] relative flex items-center justify-center">
@@ -37,7 +106,7 @@ export default function Home() {
                     value={sourceText}
                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                       setSourceText(e.target.value)
-                    }                    
+                    }
                   />
                   <div className="flex flex-row justify-between w-full">
                     <span className="cursor-pointer flex space-x-2 flex-row">
@@ -48,8 +117,8 @@ export default function Home() {
                         size={22}
                         onClick={() => handleAudioPlayback(sourceText)}
                       />
-                      {/* <FileUpload handleFileUpload={handleFileUpload} />
-                      <LinkPaste handleLinkPaste={handleLinkPaste} /> */}
+                      <FileUpload handleFileUpload={handleFileUpload} />
+                      <LinkPaste handleLinkPaste={handleLinkPaste} />
                     </span>
                     <span className="text-sm pr-4">
                       {sourceText.length} / 2000
@@ -58,13 +127,13 @@ export default function Home() {
                 </div>
 
                 <div className="relative z-10 flex flex-col space-x-3 p-3  border rounded-lg shadow-lg  bg-neutral-900 border-neutral-700 shadow-gray-900/20">
-                  {/* <TextArea
+                  <TextArea
                     id="target-language"
                     value={targetText}
                     onChange={() => {}}
                     placeholder="Target Language"
-                  /> */}
-                  {/* <div className="flex flex-row justify-between w-full">
+                  />
+                  <div className="flex flex-row justify-between w-full">
                     <span className="cursor-pointer flex items-center space-x-2 flex-row">
                       <LanguageSelector
                         selectedLanguage={selectedLanguage}
@@ -89,14 +158,12 @@ export default function Home() {
                         className={favorite ? "text-yellow-500" : ""}
                       />
                     </div>
-                  </div> */}
+                  </div>
                 </div>
               </div>
-
-              {/* <SvgDecorations /> */}
             </div>
 
-            {/* <CategoryLinks /> */}
+            <CategoryLinks />
           </div>
         </div>
       </div>
